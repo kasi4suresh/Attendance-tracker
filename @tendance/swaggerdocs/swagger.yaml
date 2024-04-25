@@ -1,0 +1,1516 @@
+swagger: '2.0'
+info:
+  title: Attendance Tracker
+  description: API for managing user attendance and leaves
+  version: 1.0.0
+schemes:
+  - http
+basePath: /
+paths:
+  /login:
+    post:
+      summary: Admin Login
+      description: Authenticate an admin and get an access token
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+        - in: body
+          name: credentials
+          description: Admin credentials for login
+          schema:
+            type: object
+            properties:
+              Email:
+                type: string
+                example: admin@gmail
+              password:
+                type: string
+                example: admin@2
+      responses:
+          200:
+            description: Logged in successfully
+            schema:
+              type: object
+              properties:
+                message:
+                  type: string
+                access_token:
+                  type: string
+          400:
+            description: Bad request. Email and password are required.
+          401:
+            description: Unauthorized. Invalid credentials.
+          500:
+            description: Error logging in
+
+  /userlogin:
+    post:
+      summary: User Login
+      description: Authenticate an admin and get an access token
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+        - in: body
+          name: credentials
+          description: User credentials for login and mark attendance statue in attendance
+          schema:
+            type: object
+            properties:
+              email:
+                type: string
+              password:
+                type: string
+      responses:
+        '200':
+          description: Logged in successfully
+          schema:
+            type: object
+            properties:
+              message:
+                type: string
+              access_token:
+                type: string
+        '400':
+          description: Bad request. Email and password are required.
+        '401':
+          description: Unauthorized. Invalid credentials.
+        '500':
+          description: Error logging in
+
+
+  /add_user:
+    post:
+      summary: Add User by Admin
+      description: Add a new user to the user table by admin
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      security:
+        - JWTAuth: []
+      parameters:
+        - in: header
+          name: Authorization
+          type: string
+          required: true
+          description: "JWT token in the format 'Bearer <JWT_Token>'"
+        - in: body
+          name: user
+          description: User details to be added
+          required: true
+          schema:
+            type: object
+            required:
+              - username
+              - email
+              - password
+            properties:
+              username:
+                type: string
+              email:
+                type: string
+              password:
+                type: string
+      responses:
+        '200':
+          description: User added successfully
+        '400':
+          description: Bad request. Missing required fields or invalid data.
+        '404':
+          description: Admin not found
+        '500':
+          description: Error adding user
+
+
+  /update_user:
+      put:
+        tags:
+          - 'User'
+        summary: 'Update User'
+        description: 'Update an existing user'
+        parameters:
+          - name: 'Authorization'
+            in: 'header'
+            description: 'JWT token obtained during authentication'
+            required: true
+            type: 'string'
+            default: 'Bearer YOUR_ACCESS_TOKEN'
+          - in: 'body'
+            name: 'user_data'
+            required: true
+            schema:
+              type: 'object'
+              properties:
+                user_id:
+                  type: 'integer'
+                username:
+                  type: 'string'
+                email:
+                  type: 'string'
+                password:
+                  type: 'string'
+        responses:
+          200:
+            description: 'User updated successfully'
+            schema:
+              type: 'object'
+              properties:
+                message:
+                  type: 'string'
+          400:
+            description: 'Bad request. Email and password are required.'
+          401:
+            description: 'Unauthorized. Invalid credentials.'
+          404:
+            description: 'Admin or User not found.'
+          500:
+            description: 'Error updating user.'
+            schema:
+              type: 'object'
+              properties:
+                message:
+                  type: 'string'
+                error:
+                  type: 'string'
+
+
+  /admin/delete_user/{user_id}:
+    delete:
+      tags:
+        - Admin
+      security:
+        - JWT: [ ]
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          type: integer
+          description: ID of the user to be deleted
+      responses:
+        200:
+          description: User and related data deleted successfully
+        400:
+          description: Invalid request
+        401:
+          description: Unauthorized access
+        404:
+          description: User or admin not found
+        500:
+          description: Internal server error
+
+  /getuser/{User_id}:
+    get:
+      tags:
+        - 'User'
+      summary: 'Get user by ID'
+      description: 'Retrieves user details by their ID.'
+      parameters:
+        - name: 'Authorization'
+          in: 'header'
+          type: 'string'
+          required: true
+          description: 'JWT token obtained during admin login'
+        - name: 'User_id'
+          in: 'path'
+          type: 'integer'
+          required: true
+          description: 'ID of the user to retrieve'
+      responses:
+        '200':
+          description: 'User found'
+          schema:
+            $ref: '#/definitions/User'
+        '401':
+          description: 'Unauthorized. Invalid token.'
+        '404':
+          description: 'User not found or does not belong to the admin'
+        '500':
+          description: 'Error retrieving user'
+
+  /attendance/logout:
+    post:
+      tags:
+        - 'Attendance'
+      summary: 'Logout'
+      description: 'Update logout time for the current user'
+      parameters:
+        - name: 'Authorization'
+          in: 'header'
+          type: 'string'
+          required: true
+          description: 'JWT token obtained during admin login'
+      responses:
+        '200':
+          description: 'Logout time updated successfully'
+          schema:
+            type: 'object'
+            properties:
+              message:
+                type: 'string'
+        '404':
+          description: 'No attendance record found for this user'
+          schema:
+            type: 'object'
+            properties:
+              message:
+                type: 'string'
+        '500':
+          description: 'Error updating logout time'
+          schema:
+            type: 'object'
+            properties:
+              error:
+                type: 'string'
+
+  /get_all_users:
+    get:
+      tags:
+        - 'Users'
+      summary: 'Get All Users'
+      description: 'Retrieve a list of all users'
+      parameters:
+        - name: 'Authorization'
+          in: 'header'
+          type: 'string'
+          required: true
+          description: 'JWT token obtained during admin login'
+      responses:
+        '200':
+          description: 'List of all users'
+          schema:
+            type: 'object'
+            properties:
+              users:
+                type: 'array'
+                items:
+                  type: 'object'
+                  properties:
+                    user_id:
+                      type: 'integer'
+                    username:
+                      type: 'string'
+                    email:
+                      type: 'string'
+                    Admin_id:
+                      type: 'integer'
+                    created_at:
+                      type: 'string'
+        '404':
+          description: 'Admin not found'
+          schema:
+            type: 'object'
+            properties:
+              message:
+                type: 'string'
+        '500':
+          description: 'Error retrieving users'
+          schema:
+            type: 'object'
+            properties:
+              message:
+                type: 'string'
+              error:
+                type: 'string'
+
+  /apply_leave:
+    post:
+      tags:
+        - 'Leaves'
+      summary: 'Apply for Leave'
+      description: 'Allows a user to apply for leave'
+      parameters:
+        - name: 'Authorization'
+          in: 'header'
+          type: 'string'
+          required: true
+          description: 'JWT token obtained during user login'
+        - name: 'from_date'
+          in: 'body'
+          type: 'string'
+          required: true
+          description: 'Start date of the leave (YYYY-MM-DD)'
+        - name: 'to_date'
+          in: 'body'
+          type: 'string'
+          required: true
+          description: 'End date of the leave (YYYY-MM-DD)'
+        - name: 'reason'
+          in: 'body'
+          type: 'string'
+          required: true
+          description: 'Reason for leave'
+        - name: 'status'
+          in: 'body'
+          type: 'string'
+          required: true
+          description: 'Status of leave'
+      responses:
+        '201':
+          description: 'Leave applied successfully'
+          schema:
+            type: 'object'
+            properties:
+              message:
+                type: 'string'
+        '400':
+          description: 'Reason is required'
+          schema:
+            type: 'object'
+            properties:
+              message:
+                type: 'string'
+        '404':
+          description: 'User not found'
+          schema:
+            type: 'object'
+            properties:
+              message:
+                type: 'string'
+        '500':
+          description: 'Error applying leave'
+          schema:
+            type: 'object'
+            properties:
+              message:
+                type: 'string'
+              error:
+                type: 'string'
+
+  /get_all_leaves:
+    get:
+      tags:
+        - 'Leaves'
+      summary: 'Get All Leaves'
+      description: 'Retrieves a list of all leaves'
+      parameters:
+        - name: 'Authorization'
+          in: 'header'
+          type: 'string'
+          required: true
+          description: 'JWT token obtained during admin login'
+      responses:
+        '200':
+          description: 'List of all leaves'
+          schema:
+            type: 'object'
+            properties:
+              leaves:
+                type: 'array'
+                items:
+                  type: 'object'
+                  properties:
+                    LeaveId:
+                      type: 'integer'
+                    user_id:
+                      type: 'integer'
+                    username:
+                      type: 'string'
+                    from_date:
+                      type: 'string'
+                    to_date:
+                      type: 'string'
+                    reason:
+                      type: 'string'
+                    status:
+                      type: 'string'
+        '404':
+          description: 'Admin not found'
+          schema:
+            type: 'object'
+            properties:
+              message:
+                type: 'string'
+        '500':
+          description: 'Error retrieving leaves'
+          schema:
+            type: 'object'
+            properties:
+              message:
+                type: 'string'
+              error:
+                type: 'string'
+
+  /user_leave/{user_id}:
+    get:
+      tags:
+        - 'Leaves'
+      summary: 'Get User Leave'
+      description: 'Retrieves leave details of a specific user'
+      parameters:
+        - name: 'Authorization'
+          in: 'header'
+          type: 'string'
+          required: true
+          description: 'JWT token obtained during admin login'
+        - name: 'user_id'
+          in: 'path'
+          type: 'integer'
+          required: true
+          description: 'ID of the user whose leave is to be retrieved'
+      responses:
+        '200':
+          description: 'User leave retrieved successfully'
+          schema:
+            type: 'object'
+            properties:
+              user_leave:
+                type: 'array'
+                items:
+                  type: 'object'
+                  properties:
+                    LeaveId:
+                      type: 'integer'
+                    user_id:
+                      type: 'integer'
+                    username:
+                      type: 'string'
+                    reason:
+                      type: 'string'
+                    status:
+                      type: 'string'
+        '404':
+          description: 'User not found'
+          schema:
+            type: 'object'
+            properties:
+              message:
+                type: 'string'
+        '500':
+          description: 'Error retrieving user leave'
+          schema:
+            type: 'object'
+            properties:
+              message:
+                type: 'string'
+              error:
+                type: 'string'
+
+  /attendance/all:
+    get:
+      tags:
+        - 'Attendance'
+      summary: 'Get All Attendance Records'
+      description: 'Retrieves all attendance records'
+      parameters:
+        - name: 'Authorization'
+          in: 'header'
+          type: 'string'
+          required: true
+          description: 'JWT token obtained during admin login'
+      responses:
+        '200':
+          description: 'Attendance records retrieved successfully'
+          schema:
+            type: 'object'
+            properties:
+              attendance:
+                type: 'array'
+                items:
+                  type: 'object'
+                  properties:
+                    user_id:
+                      type: 'integer'
+                    username:
+                      type: 'string'
+                    login_time:
+                      type: 'string'
+                      format: 'date-time'
+                    logout_time:
+                      type: 'string'
+                      format: 'date-time'
+        '404':
+          description: 'Admin not found'
+          schema:
+            type: 'object'
+            properties:
+              message:
+                type: 'string'
+        '500':
+          description: 'Error retrieving attendance records'
+          schema:
+            type: 'object'
+            properties:
+              message:
+                type: 'string'
+              error:
+                type: 'string'
+
+  /attendance/{user_id}:
+    get:
+      tags:
+        - 'Attendance'
+      summary: 'Get Attendance Records by User ID'
+      description: 'Retrieves attendance records for a specific user'
+      parameters:
+        - name: 'Authorization'
+          in: 'header'
+          type: 'string'
+          required: true
+          description: 'JWT token obtained during admin login'
+        - name: 'user_id'
+          in: 'path'
+          type: 'integer'
+          required: true
+          description: 'ID of the user whose attendance records are to be retrieved'
+      responses:
+        '200':
+          description: 'Attendance records retrieved successfully'
+          schema:
+            type: 'object'
+            properties:
+              attendance:
+                type: 'array'
+                items:
+                  type: 'object'
+                  properties:
+                    user_id:
+                      type: 'integer'
+                    username:
+                      type: 'string'
+                    login_time:
+                      type: 'string'
+                      format: 'date-time'
+                    logout_time:
+                      type: 'string'
+                      format: 'date-time'
+        '404':
+          description: 'No attendance records found for this user'
+          schema:
+            type: 'object'
+            properties:
+              message:
+                type: 'string'
+        '500':
+          description: 'Error retrieving attendance records'
+          schema:
+            type: 'object'
+            properties:
+              error:
+                type: 'string'
+
+  /approve_leave/{leave_id}:
+    put:
+      tags:
+        - 'Leaves'
+      summary: 'Approve Leave Request'
+      description: 'Approves a leave request by leave ID'
+      parameters:
+        - name: 'Authorization'
+          in: 'header'
+          type: 'string'
+          required: true
+          description: 'JWT token obtained during admin login'
+        - name: 'leave_id'
+          in: 'path'
+          type: 'integer'
+          required: true
+          description: 'ID of the leave request to be approved'
+      responses:
+        '200':
+          description: 'Leave request approved successfully'
+          schema:
+            type: 'object'
+            properties:
+              message:
+                type: 'string'
+        '404':
+          description: 'Resource not found'
+          schema:
+            type: 'object'
+            properties:
+              message:
+                type: 'string'
+        '500':
+          description: 'Error approving leave request'
+          schema:
+            type: 'object'
+            properties:
+              message:
+                type: 'string'
+              error:
+                type: 'string'
+
+  /reject_leave/{leave_id}:
+    put:
+      tags:
+        - 'Leaves'
+      summary: 'Reject Leave Request'
+      description: 'Rejects a leave request by leave ID'
+      parameters:
+        - name: 'Authorization'
+          in: 'header'
+          type: 'string'
+          required: true
+          description: 'JWT token obtained during admin login'
+        - name: 'leave_id'
+          in: 'path'
+          type: 'integer'
+          required: true
+          description: 'ID of the leave request to be rejected'
+      responses:
+        '200':
+          description: 'Leave request rejected successfully'
+          schema:
+            type: 'object'
+            properties:
+              message:
+                type: 'string'
+        '404':
+          description: 'Resource not found'
+          schema:
+            type: 'object'
+            properties:
+              message:
+                type: 'string'
+        '500':
+          description: 'Error rejecting leave request'
+          schema:
+            type: 'object'
+            properties:
+              message:
+                type: 'string'
+              error:
+                type: 'string'
+
+  /absent_users_data:
+    get:
+      tags:
+        - 'Attendance'
+      summary: 'Get Absent Users Data'
+      description: 'Retrieves data of users who were absent within a specified date range'
+      parameters:
+        - name: 'Authorization'
+          in: 'header'
+          type: 'string'
+          required: true
+          description: 'JWT token obtained during admin login'
+        - name: 'start_date'
+          in: 'query'
+          type: 'string'
+          format: 'date'
+          required: true
+          description: 'Start date in YYYY-MM-DD format'
+        - name: 'end_date'
+          in: 'query'
+          type: 'string'
+          format: 'date'
+          required: true
+          description: 'End date in YYYY-MM-DD format'
+      responses:
+        '200':
+          description: 'Absent users data retrieved successfully'
+          schema:
+            type: 'object'
+            properties:
+              absent_users_count:
+                type: 'integer'
+              absent_users:
+                type: 'array'
+                items:
+                  type: 'object'
+                  properties:
+                    user_id:
+                      type: 'integer'
+                    username:
+                      type: 'string'
+                    login_time:
+                      type: 'string'
+                    logout_time:
+                      type: 'string'
+                    status:
+                      type: 'string'
+        '404':
+          description: 'No absent users found in the specified date range'
+          schema:
+            type: 'object'
+            properties:
+              message:
+                type: 'string'
+        '500':
+          description: 'Error fetching absent users data'
+          schema:
+            type: 'object'
+            properties:
+              message:
+                type: 'string'
+              error:
+                type: 'string'
+
+  /present_users_data:
+    get:
+      tags:
+        - 'Attendance'
+      summary: 'Get Present Users Data'
+      description: 'Retrieves data of users who were present within a specified date range'
+      parameters:
+        - name: 'Authorization'
+          in: 'header'
+          type: 'string'
+          required: true
+          description: 'JWT token obtained during admin login'
+        - name: 'start_date'
+          in: 'query'
+          type: 'string'
+          format: 'date'
+          required: true
+          description: 'Start date in YYYY-MM-DD format'
+        - name: 'end_date'
+          in: 'query'
+          type: 'string'
+          format: 'date'
+          required: true
+          description: 'End date in YYYY-MM-DD format'
+      responses:
+        '200':
+          description: 'Present users data retrieved successfully'
+          schema:
+            type: 'object'
+            properties:
+              present_users_count:
+                type: 'integer'
+              present_users:
+                type: 'array'
+                items:
+                  type: 'object'
+                  properties:
+                    user_id:
+                      type: 'integer'
+                    username:
+                      type: 'string'
+                    login_time:
+                      type: 'string'
+                    logout_time:
+                      type: 'string'
+                    status:
+                      type: 'string'
+        '404':
+          description: 'No present users found in the specified date range'
+          schema:
+            type: 'object'
+            properties:
+              message:
+                type: 'string'
+        '500':
+          description: 'Error fetching present users data'
+          schema:
+            type: 'object'
+            properties:
+              message:
+                type: 'string'
+              error:
+                type: 'string'
+
+  /rejected_leaves/{date}:
+    get:
+      tags:
+        - 'Leaves'
+      summary: 'Get Rejected Leaves Data'
+      description: 'Retrieves data of rejected leaves for a specific date'
+      parameters:
+        - name: 'Authorization'
+          in: 'header'
+          type: 'string'
+          required: true
+          description: 'JWT token obtained during admin login'
+        - name: 'date'
+          in: 'path'
+          type: 'string'
+          format: 'date'
+          required: true
+          description: 'Date in YYYY-MM-DD format'
+      responses:
+        '200':
+          description: 'Rejected leaves data retrieved successfully'
+          schema:
+            type: 'object'
+            properties:
+              rejected_leaves:
+                type: 'array'
+                items:
+                  type: 'object'
+                  properties:
+                    LeaveId:
+                      type: 'integer'
+                    user_id:
+                      type: 'integer'
+                    username:
+                      type: 'string'
+                    from_date:
+                      type: 'string'
+                    to_date:
+                      type: 'string'
+                    reason:
+                      type: 'string'
+                    status:
+                      type: 'string'
+              rejected_leave_count:
+                type: 'integer'
+        '400':
+          description: 'Invalid date format. Use YYYY-MM-DD.'
+          schema:
+            type: 'object'
+            properties:
+              error:
+                type: 'string'
+
+  /pending_leaves/{date}:
+    get:
+      tags:
+        - 'Leaves'
+      summary: 'Get Pending Leaves Data'
+      description: 'Retrieves data of pending leaves for a specific date'
+      parameters:
+        - name: 'Authorization'
+          in: 'header'
+          type: 'string'
+          required: true
+          description: 'JWT token obtained during admin login'
+        - name: 'date'
+          in: 'path'
+          type: 'string'
+          format: 'date'
+          required: true
+          description: 'Date in YYYY-MM-DD format'
+      responses:
+        '200':
+          description: 'Pending leaves data retrieved successfully'
+          schema:
+            type: 'object'
+            properties:
+              pending_leaves:
+                type: 'array'
+                items:
+                  type: 'object'
+                  properties:
+                    LeaveId:
+                      type: 'integer'
+                    user_id:
+                      type: 'integer'
+                    username:
+                      type: 'string'
+                    from_date:
+                      type: 'string'
+                    to_date:
+                      type: 'string'
+                    reason:
+                      type: 'string'
+                    status:
+                      type: 'string'
+              pending_leave_count:
+                type: 'integer'
+        '400':
+          description: 'Invalid date format. Use YYYY-MM-DD.'
+          schema:
+            type: 'object'
+            properties:
+              error:
+                type: 'string'
+
+  /approved_leaves/{date}:
+    get:
+      tags:
+        - 'Leaves'
+      summary: 'Get Approved Leaves Data'
+      description: 'Retrieves data of approved leaves for a specific date'
+      parameters:
+        - name: 'Authorization'
+          in: 'header'
+          type: 'string'
+          required: true
+          description: 'JWT token obtained during admin login'
+        - name: 'date'
+          in: 'path'
+          type: 'string'
+          format: 'date'
+          required: true
+          description: 'Date in YYYY-MM-DD format'
+      responses:
+        '200':
+          description: 'Approved leaves data retrieved successfully'
+          schema:
+            type: 'object'
+            properties:
+              approved_leaves:
+                type: 'array'
+                items:
+                  type: 'object'
+                  properties:
+                    LeaveId:
+                      type: 'integer'
+                    user_id:
+                      type: 'integer'
+                    username:
+                      type: 'string'
+                    from_date:
+                      type: 'string'
+                    to_date:
+                      type: 'string'
+                    reason:
+                      type: 'string'
+                    status:
+                      type: 'string'
+              approved_leave_count:
+                type: 'integer'
+        '400':
+          description: 'Invalid date format. Use YYYY-MM-DD.'
+          schema:
+            type: 'object'
+            properties:
+              error:
+                type: 'string'
+
+  /total_leaves/{date}:
+    get:
+      tags:
+        - 'Leaves'
+      summary: 'Get Total Leaves Data'
+      description: 'Retrieves data of all leaves for a specific date'
+      parameters:
+        - name: 'Authorization'
+          in: 'header'
+          type: 'string'
+          required: true
+          description: 'JWT token obtained during admin login'
+        - name: 'date'
+          in: 'path'
+          type: 'string'
+          format: 'date'
+          required: true
+          description: 'Date in YYYY-MM-DD format'
+      responses:
+        '200':
+          description: 'Total leaves data retrieved successfully'
+          schema:
+            type: 'object'
+            properties:
+              all_leaves:
+                type: 'array'
+                items:
+                  type: 'object'
+                  properties:
+                    LeaveId:
+                      type: 'integer'
+                    user_id:
+                      type: 'integer'
+                    username:
+                      type: 'string'
+                    from_date:
+                      type: 'string'
+                    to_date:
+                      type: 'string'
+                    reason:
+                      type: 'string'
+                    status:
+                      type: 'string'
+              all_leave_count:
+                type: 'integer'
+        '400':
+          description: 'Invalid date format. Use YYYY-MM-DD.'
+          schema:
+            type: 'object'
+            properties:
+              error:
+                type: 'string'
+
+  /pending_leaves_data:
+    get:
+      tags:
+        - 'Leaves'
+      summary: 'Get Pending Leaves Data'
+      description: 'Retrieves data of pending leaves within a specified date range'
+      parameters:
+        - name: 'Authorization'
+          in: 'header'
+          type: 'string'
+          required: true
+          description: 'JWT token obtained during admin login'
+        - name: 'start_date'
+          in: 'query'
+          type: 'string'
+          format: 'date'
+          required: true
+          description: 'Start date in YYYY-MM-DD format'
+        - name: 'end_date'
+          in: 'query'
+          type: 'string'
+          format: 'date'
+          required: true
+          description: 'End date in YYYY-MM-DD format'
+      responses:
+        '200':
+          description: 'Pending leaves data retrieved successfully'
+          schema:
+            type: 'object'
+            properties:
+              pending_leaves:
+                type: 'array'
+                items:
+                  type: 'object'
+                  properties:
+                    LeaveId:
+                      type: 'integer'
+                    user_id:
+                      type: 'integer'
+                    username:
+                      type: 'string'
+                    from_date:
+                      type: 'string'
+                    to_date:
+                      type: 'string'
+                    reason:
+                      type: 'string'
+                    status:
+                      type: 'string'
+              pending_leaves_count:
+                type: 'integer'
+        '500':
+          description: 'Error fetching pending leaves data'
+          schema:
+            type: 'object'
+            properties:
+              message:
+                type: 'string'
+              error:
+                type: 'string'
+
+  /rejected_leaves_data:
+    get:
+      tags:
+        - 'Leaves'
+      summary: 'Get Rejected Leaves Data'
+      description: 'Retrieves data of rejected leaves within a specified date range'
+      parameters:
+        - name: 'Authorization'
+          in: 'header'
+          type: 'string'
+          required: true
+          description: 'JWT token obtained during admin login'
+        - name: 'start_date'
+          in: 'query'
+          type: 'string'
+          format: 'date'
+          required: true
+          description: 'Start date in YYYY-MM-DD format'
+        - name: 'end_date'
+          in: 'query'
+          type: 'string'
+          format: 'date'
+          required: true
+          description: 'End date in YYYY-MM-DD format'
+      responses:
+        '200':
+          description: 'Rejected leaves data retrieved successfully'
+          schema:
+            type: 'object'
+            properties:
+              rejected_leaves:
+                type: 'array'
+                items:
+                  type: 'object'
+                  properties:
+                    LeaveId:
+                      type: 'integer'
+                    user_id:
+                      type: 'integer'
+                    username:
+                      type: 'string'
+                    from_date:
+                      type: 'string'
+                    to_date:
+                      type: 'string'
+                    reason:
+                      type: 'string'
+                    status:
+                      type: 'string'
+              rejected_leaves_count:
+                type: 'integer'
+        '400':
+          description: 'Invalid date format. Please use YYYY-MM-DD format.'
+          schema:
+            type: 'object'
+            properties:
+              message:
+                type: 'string'
+              error:
+                type: 'string'
+        '500':
+          description: 'Error fetching rejected leaves data'
+          schema:
+            type: 'object'
+            properties:
+              message:
+                type: 'string'
+              error:
+                type: 'string'
+
+  /total_leaves_data:
+    get:
+      tags:
+        - 'Leaves'
+      summary: 'Get Total Leaves Data'
+      description: 'Retrieves data of total leaves within a specified date range'
+      parameters:
+        - name: 'Authorization'
+          in: 'header'
+          type: 'string'
+          required: true
+          description: 'JWT token obtained during admin login'
+        - name: 'start_date'
+          in: 'query'
+          type: 'string'
+          format: 'date'
+          required: true
+          description: 'Start date in YYYY-MM-DD format'
+        - name: 'end_date'
+          in: 'query'
+          type: 'string'
+          format: 'date'
+          required: true
+          description: 'End date in YYYY-MM-DD format'
+      responses:
+        '200':
+          description: 'Total leaves data retrieved successfully'
+          schema:
+            type: 'object'
+            properties:
+              total_leaves:
+                type: 'array'
+                items:
+                  type: 'object'
+                  properties:
+                    LeaveId:
+                      type: 'integer'
+                    user_id:
+                      type: 'integer'
+                    username:
+                      type: 'string'
+                    from_date:
+                      type: 'string'
+                    to_date:
+                      type: 'string'
+                    reason:
+                      type: 'string'
+                    status:
+                      type: 'string'
+              total_leaves_count:
+                type: 'integer'
+        '400':
+          description: 'Invalid date format. Please use YYYY-MM-DD format.'
+          schema:
+            type: 'object'
+            properties:
+              message:
+                type: 'string'
+              error:
+                type: 'string'
+        '500':
+          description: 'Error fetching total leaves data'
+          schema:
+            type: 'object'
+            properties:
+              message:
+                type: 'string'
+              error:
+                type: 'string'
+
+  /present_count/{date}:
+    get:
+      tags:
+        - 'Attendance'
+      summary: 'Get Present Count Data'
+      description: 'Retrieves data of present count for a specific date'
+      parameters:
+        - name: 'Authorization'
+          in: 'header'
+          type: 'string'
+          required: true
+          description: 'JWT token obtained during admin login'
+        - name: 'date'
+          in: 'path'
+          type: 'string'
+          required: true
+          description: 'Date in YYYY-MM-DD format'
+      responses:
+        '200':
+          description: 'Present count data retrieved successfully'
+          schema:
+            type: 'object'
+            properties:
+              present_count:
+                type: 'integer'
+              present_data:
+                type: 'array'
+                items:
+                  type: 'object'
+                  properties:
+                    user_id:
+                      type: 'integer'
+                    username:
+                      type: 'string'
+                    login_time:
+                      type: 'string'
+                      format: 'date-time'
+                    logout_time:
+                      type: 'string'
+                      format: 'date-time'
+                    status:
+                      type: 'string'
+        '400':
+          description: 'Invalid date format. Please use YYYY-MM-DD format.'
+          schema:
+            type: 'object'
+            properties:
+              error:
+                type: 'string'
+
+  /absent_data/{date}:
+    get:
+      tags:
+        - 'Attendance'
+      summary: 'Get Absent Data'
+      description: 'Retrieves data of absent entries for a specific date'
+      parameters:
+        - name: 'Authorization'
+          in: 'header'
+          type: 'string'
+          required: true
+          description: 'JWT token obtained during admin login'
+        - name: 'date'
+          in: 'path'
+          type: 'string'
+          required: true
+          description: 'Date in YYYY-MM-DD format'
+      responses:
+        '200':
+          description: 'Absent data retrieved successfully'
+          schema:
+            type: 'object'
+            properties:
+              absent_count:
+                type: 'integer'
+              absent_data:
+                type: 'array'
+                items:
+                  type: 'object'
+                  properties:
+                    user_id:
+                      type: 'integer'
+                    username:
+                      type: 'string'
+                    login_time:
+                      type: 'string'
+                      format: 'date-time'
+                    logout_time:
+                      type: 'string'
+                      format: 'date-time'
+                    status:
+                      type: 'string'
+        '400':
+          description: 'Invalid date format. Please use YYYY-MM-DD format.'
+          schema:
+            type: 'object'
+            properties:
+              error:
+                type: 'string'
+
+  /absent_count_by_id/{user_id}:
+    get:
+      tags:
+        - 'Attendance'
+      summary: 'Get Absent Count by User ID'
+      description: 'Retrieves the absent count and data for a specific user within a date range'
+      parameters:
+        - name: 'Authorization'
+          in: 'header'
+          type: 'string'
+          required: true
+          description: 'JWT token obtained during admin login'
+        - name: 'user_id'
+          in: 'path'
+          type: 'integer'
+          required: true
+          description: 'ID of the user to retrieve absent count for'
+        - name: 'start_date'
+          in: 'query'
+          type: 'string'
+          required: true
+          description: 'Start date in YYYY-MM-DD format'
+        - name: 'end_date'
+          in: 'query'
+          type: 'string'
+          required: true
+          description: 'End date in YYYY-MM-DD format'
+      responses:
+        '200':
+          description: 'Absent count and data retrieved successfully'
+          schema:
+            type: 'object'
+            properties:
+              absent_count:
+                type: 'integer'
+              absent_data:
+                type: 'array'
+                items:
+                  type: 'object'
+                  properties:
+                    user_id:
+                      type: 'integer'
+                    username:
+                      type: 'string'
+                    login_time:
+                      type: 'string'
+                      format: 'date-time'
+                    logout_time:
+                      type: 'string'
+                      format: 'date-time'
+                    status:
+                      type: 'string'
+        '400':
+          description: 'Invalid date format. Please use YYYY-MM-DD format.'
+          schema:
+            type: 'object'
+            properties:
+              error:
+                type: 'string'
+        '500':
+          description: 'Error fetching absent count for user'
+          schema:
+            type: 'object'
+            properties:
+              message:
+                type: 'string'
+              error:
+                type: 'string'
+
+  /present_count_by_id/{user_id}:
+    get:
+      tags:
+        - 'Attendance'
+      summary: 'Get Present Count by User ID'
+      description: 'Retrieves the present count and data for a specific user within a date range'
+      parameters:
+        - name: 'Authorization'
+          in: 'header'
+          type: 'string'
+          required: true
+          description: 'JWT token obtained during admin login'
+        - name: 'user_id'
+          in: 'path'
+          type: 'integer'
+          required: true
+          description: 'ID of the user to retrieve present count for'
+        - name: 'start_date'
+          in: 'query'
+          type: 'string'
+          required: true
+          description: 'Start date in YYYY-MM-DD format'
+        - name: 'end_date'
+          in: 'query'
+          type: 'string'
+          required: true
+          description: 'End date in YYYY-MM-DD format'
+      responses:
+        '200':
+          description: 'Present count and data retrieved successfully'
+          schema:
+            type: 'object'
+            properties:
+              present_count:
+                type: 'integer'
+              present_data:
+                type: 'array'
+                items:
+                  type: 'object'
+                  properties:
+                    user_id:
+                      type: 'integer'
+                    username:
+                      type: 'string'
+                    login_time:
+                      type: 'string'
+                      format: 'date-time'
+                    logout_time:
+                      type: 'string'
+                      format: 'date-time'
+                    status:
+                      type: 'string'
+        '400':
+          description: 'Invalid date format. Please use YYYY-MM-DD format.'
+          schema:
+            type: 'object'
+            properties:
+              error:
+                type: 'string'
+        '500':
+          description: 'Error fetching present count for user'
+          schema:
+            type: 'object'
+            properties:
+              message:
+                type: 'string'
+              error:
+                type: 'string'
+
+  /total_leave_count_by_id/{user_id}:
+    get:
+      tags:
+        - 'Attendance'
+      summary: 'Get Total Leave Count by User ID'
+      description: 'Retrieves the total leave count and data for a specific user within a date range'
+      parameters:
+        - name: 'Authorization'
+          in: 'header'
+          type: 'string'
+          required: true
+          description: 'JWT token obtained during admin login'
+        - name: 'user_id'
+          in: 'path'
+          type: 'integer'
+          required: true
+          description: 'ID of the user to retrieve total leave count for'
+        - name: 'start_date'
+          in: 'query'
+          type: 'string'
+          required: true
+          description: 'Start date in YYYY-MM-DD format'
+        - name: 'end_date'
+          in: 'query'
+          type: 'string'
+          required: true
+          description: 'End date in YYYY-MM-DD format'
+      responses:
+        '200':
+          description: 'Total leave count and data retrieved successfully'
+          schema:
+            type: 'object'
+            properties:
+              total_leave_count:
+                type: 'integer'
+
+
+definitions:
+    User:
+      type: 'object'
+      properties:
+        user_id:
+          type: 'integer'
+        username:
+          type: 'string'
+        password:
+          type: 'string'
+        email:
+          type: 'string'
+        Admin_id:
+          type: 'integer'
+        created_at:
+          type: 'string'
+
+securityDefinitions:
+  JWTAuth:
+    type: apiKey
+    name: Authorization
+    in: header
