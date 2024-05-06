@@ -19,8 +19,8 @@ app.config['MAIL_SERVER'] = 'smtp.gmail.com'
 app.config['MAIL_PORT'] = 465
 app.config['MAIL_USE_SSL'] = True
 app.config['MAIL_USE_TLS'] = False
-app.config['MAIL_USERNAME'] = 'suresh4kasi@gmail.com'
-app.config['MAIL_PASSWORD'] = 'fdfbjajrdrnmdfcb'
+app.config['MAIL_USERNAME'] = 'kasi4suresh@gmail.com'
+app.config['MAIL_PASSWORD'] = 'rajakumari'
 app.config['MAIL_DEBUG'] = True
 app.config['SECRET_KEY'] = '521ca85a63664803b13d7300f6beae18'
 app.config['SWAGGER'] = {
@@ -91,7 +91,7 @@ with app.app_context():
 
 def send_verification_email(user):
     try:
-        msg = Message('Welcome to Autointelli!', sender='shanmugasundar.robotics@gmail.com', recipients=[user.email])
+        msg = Message('Welcome to Autointelli!', sender='kasi4suresh@gmail.com', recipients=[user.email])
         msg.body = f"Hello {user.username},\n\nYour account has been created successfully.\n\nUsername: {user.username}\nUseremail: {user.email}\nPassword: {user.password}\n\nThank you!"
         mail.send(msg)
         print("Email sent successfully!")
@@ -101,7 +101,7 @@ def send_verification_email(user):
 
 def send_leave_email(leaves, user):
     try:
-        msg = Message('Leave Application', sender='shanmugasundar.robotics@gmail.com',
+        msg = Message('Leave Application', sender='kasi4suresh@gmail.com',
                       recipients=['sundaradnim@gmail.com', user.email])
         msg.body = f"Hello request for leave is submitted successfully ,\n\nYour leave details\n\nfrom_date: {leaves.from_date}\nto_date: {leaves.to_date}\nreason: {leaves.reason}\nstatus: {leaves.status}\n\nThank you!\n{leaves.username}"
         mail.send(msg)
@@ -112,7 +112,7 @@ def send_leave_email(leaves, user):
 
 def send_leave_approval_email(leaves, user):
     try:
-        msg = Message('Leave Application Approval', sender='shanmugasundar.robotics@gmail.com', recipients=[user.email])
+        msg = Message('Leave Application Approval', sender='kasi4suresh@gmail.com', recipients=[user.email])
         msg.body = f"Hello request for leave is Approved successfully ,\n\nYour Leave details.\n\nLeaveId: {leaves.LeaveId}\nuser_id: {leaves.user_id}\nusername: {leaves.username}\nfrom_date: {leaves.from_date}\nto_date: {leaves.to_date}\nreason: {leaves.reason}\nstatus: {leaves.status}\n\nThank you!\n{leaves.username}"
         mail.send(msg)
         print("Email sent successfully!")
@@ -122,7 +122,7 @@ def send_leave_approval_email(leaves, user):
 
 def send_leave_rejection_email(leaves, user):
     try:
-        msg = Message('Leave Application Rejection', sender='shanmugasundar.robotics@gmail.com',
+        msg = Message('Leave Application Rejection', sender='kasi4suresh@gmail.com',
                       recipients=[user.email])
         msg.body = f"Hello request for leave is Rejected. ,\n\nYour Leave details.\n\nLeaveId: {leaves.LeaveId}\nuser_id: {leaves.user_id}\nusername: {leaves.username}\nfrom_date: {leaves.from_date}\nto_date: {leaves.to_date}\nreason: {leaves.reason}\nstatus: {leaves.status}\n\nThank you!\n{leaves.username}"
         mail.send(msg)
